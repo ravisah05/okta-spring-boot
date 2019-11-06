@@ -34,6 +34,7 @@ import org.springframework.security.oauth2.core.http.converter.OAuth2AccessToken
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import static org.springframework.util.StringUtils.isEmpty;
 
@@ -55,8 +56,10 @@ final class OktaOAuth2Configurer extends AbstractHttpConfigurer<OktaOAuth2Config
                 && !isEmpty(oktaOAuth2Properties.getIssuer())
                 && !isEmpty(oktaOAuth2Properties.getClientId())
                 && !isEmpty(oktaOAuth2Properties.getClientSecret())) {
+
                 // configure Okta user services
-                configureLogin(http, oktaOAuth2Properties);
+                Collection<AuthoritiesProvider> authoritiesProviders = context.getBeansOfType(AuthoritiesProvider.class).values();
+                configureLogin(http, oktaOAuth2Properties, authoritiesProviders);
 
                 // check for RP-Initiated logout
                 if (!context.getBeansOfType(OidcClientInitiatedLogoutSuccessHandler.class).isEmpty()) {
@@ -82,12 +85,12 @@ final class OktaOAuth2Configurer extends AbstractHttpConfigurer<OktaOAuth2Config
         }
     }
 
-    private void configureLogin(HttpSecurity http, OktaOAuth2Properties oktaOAuth2Properties) throws Exception {
+    private void configureLogin(HttpSecurity http, OktaOAuth2Properties oktaOAuth2Properties, Collection<AuthoritiesProvider> authoritiesProviders) throws Exception {
 
         http.oauth2Login()
                 .userInfoEndpoint()
-                .userService(new OktaOAuth2UserService(oktaOAuth2Properties.getGroupsClaim()))
-                .oidcUserService(new OktaOidcUserService(oktaOAuth2Properties.getGroupsClaim()))
+                .userService(new OktaOAuth2UserService(authoritiesProviders))
+                .oidcUserService(new OktaOidcUserService(authoritiesProviders))
             .and()
                 .tokenEndpoint()
                     .accessTokenResponseClient(accessTokenResponseClient());

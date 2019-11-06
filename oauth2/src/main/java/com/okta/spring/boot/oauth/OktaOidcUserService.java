@@ -20,18 +20,20 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 
+import java.util.Collection;
+
 final class OktaOidcUserService extends OidcUserService {
 
-    private final String groupClaim;
+    private final Collection<AuthoritiesProvider> authoritiesProviders;
 
-    OktaOidcUserService(String groupClaim) {
-        this.groupClaim = groupClaim;
-        this.setOauth2UserService(new OktaOAuth2UserService(groupClaim));
+    OktaOidcUserService(Collection<AuthoritiesProvider> authoritiesProviders) {
+        this.authoritiesProviders = authoritiesProviders;
+        this.setOauth2UserService(new OktaOAuth2UserService(authoritiesProviders));
     }
 
     @Override
     public OidcUser loadUser(OidcUserRequest userRequest) throws OAuth2AuthenticationException {
         OidcUser user = super.loadUser(userRequest);
-        return UserUtil.decorateUser(user, userRequest, groupClaim);
+        return UserUtil.decorateUser(user, userRequest, authoritiesProviders);
     }
 }

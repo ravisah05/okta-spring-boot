@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.core.user.DefaultOAuth2User;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -31,7 +32,7 @@ final class UserUtil {
 
     private UserUtil() {}
 
-    static OAuth2User decorateUser(OAuth2User user, OAuth2UserRequest userRequest, String groupClaim) {
+    static OAuth2User decorateUser(OAuth2User user, OAuth2UserRequest userRequest, Collection<AuthoritiesProvider> authoritiesProviders) {
 
         // Only post process requests from the "Okta" reg
         if (!"Okta".equals(userRequest.getClientRegistration().getClientName())) {
@@ -40,10 +41,8 @@ final class UserUtil {
 
         // start with authorities from super
         Set<GrantedAuthority> authorities = new HashSet<>(user.getAuthorities());
-        // add 'SCOPE_' authorities
-        authorities.addAll(TokenUtil.tokenScopesToAuthorities(userRequest.getAccessToken()));
-        // add any authorities extracted from the 'group' claim
-        authorities.addAll(TokenUtil.tokenClaimsToAuthorities(user.getAttributes(), groupClaim));
+        // add each set of authorities from providers
+        authoritiesProviders.forEach(authoritiesProvider -> authorities.addAll(authoritiesProvider.getAuthorities(user, userRequest)));
 
         String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
                 .getUserInfoEndpoint().getUserNameAttributeName();
@@ -51,7 +50,7 @@ final class UserUtil {
         return new DefaultOAuth2User(authorities, user.getAttributes(), userNameAttributeName);
     }
 
-    static OidcUser decorateUser(OidcUser user, OidcUserRequest userRequest, String groupClaim) {
+    static OidcUser decorateUser(OidcUser user, OidcUserRequest userRequest, Collection<AuthoritiesProvider> authoritiesProviders) {
 
         // Only post process requests from the "Okta" reg
         if (!"Okta".equals(userRequest.getClientRegistration().getClientName())) {
@@ -60,10 +59,8 @@ final class UserUtil {
 
         // start with authorities from super
         Set<GrantedAuthority> authorities = new HashSet<>(user.getAuthorities());
-        // add 'SCOPE_' authorities
-        authorities.addAll(TokenUtil.tokenScopesToAuthorities(userRequest.getAccessToken()));
-        // add any authorities extracted from the 'group' claim
-        authorities.addAll(TokenUtil.tokenClaimsToAuthorities(user.getAttributes(), groupClaim));
+        // add each set of authorities from providers
+        authoritiesProviders.forEach(authoritiesProvider -> authorities.addAll(authoritiesProvider.getAuthorities(user, userRequest)));
 
         String userNameAttributeName = userRequest.getClientRegistration()
             .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
