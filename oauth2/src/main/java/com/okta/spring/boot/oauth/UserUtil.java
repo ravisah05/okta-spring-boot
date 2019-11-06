@@ -26,6 +26,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 final class UserUtil {
@@ -42,7 +43,10 @@ final class UserUtil {
         // start with authorities from super
         Set<GrantedAuthority> authorities = new HashSet<>(user.getAuthorities());
         // add each set of authorities from providers
-        authoritiesProviders.forEach(authoritiesProvider -> authorities.addAll(authoritiesProvider.getAuthorities(user, userRequest)));
+        authoritiesProviders.stream()
+            .map(authoritiesProvider -> authoritiesProvider.getAuthorities(user, userRequest))
+            .filter(Objects::nonNull)
+            .forEach(authorities::addAll);
 
         String userNameAttributeName = userRequest.getClientRegistration().getProviderDetails()
                 .getUserInfoEndpoint().getUserNameAttributeName();
@@ -60,7 +64,10 @@ final class UserUtil {
         // start with authorities from super
         Set<GrantedAuthority> authorities = new HashSet<>(user.getAuthorities());
         // add each set of authorities from providers
-        authoritiesProviders.forEach(authoritiesProvider -> authorities.addAll(authoritiesProvider.getAuthorities(user, userRequest)));
+        authoritiesProviders.stream()
+            .map(authoritiesProvider -> authoritiesProvider.getAuthorities(user, userRequest))
+            .filter(Objects::nonNull)
+            .forEach(authorities::addAll);
 
         String userNameAttributeName = userRequest.getClientRegistration()
             .getProviderDetails().getUserInfoEndpoint().getUserNameAttributeName();
